@@ -74,7 +74,7 @@ public class PlayerFan : MonoBehaviour
             if (Vector3.Angle(aimFlat, toEnemy.normalized) <= fanConeAngle)
             {
                 Vector3 pushDir = (toEnemy.normalized + Vector3.up * upwardBias).normalized;
-                enemy.ApplyFanForce(pushDir * fanForce);
+                enemy.ApplyFanForce(pushDir * fanForce, true);
             }
         }
     }

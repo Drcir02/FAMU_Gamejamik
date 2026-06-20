@@ -108,7 +108,7 @@ public class BlowingFan : MonoBehaviour
         SimpleEnemyChase enemy = rb.GetComponent<SimpleEnemyChase>();
         if (enemy != null)
         {
-            enemy.ApplyFanForce(finalForce);
+            enemy.ApplyFanForce(finalForce, false);
             return;
         }
         // 2. CharacterControllerBase overrides linearVelocity manually.
@@ -121,6 +121,7 @@ public class BlowingFan : MonoBehaviour
                 acceleration = finalForce / rb.mass;
             }
             rb.linearVelocity += acceleration * Time.fixedDeltaTime;
+            rb.AddForce(finalForce * 30f, ForceMode.Force);
         }
         else
         {
