@@ -256,10 +256,11 @@ public class SimpleEnemyChase : MonoBehaviour
     /// <summary>
     /// Called by the fan to push this enemy. Can be called every frame.
     /// </summary>
-    public void ApplyFanForce(Vector3 force)
+    public void ApplyFanForce(Vector3 force, bool restrictChase)
     {
         lastPushedTime = Time.time;
-        hasLandedAfterPush = false;
+        if(restrictChase)
+            hasLandedAfterPush = false;
         rb.AddForce(force, ForceMode.Force);
     }
 
