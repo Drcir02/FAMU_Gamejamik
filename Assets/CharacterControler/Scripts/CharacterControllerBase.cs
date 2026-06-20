@@ -223,7 +223,11 @@ public class CharacterControllerBase : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        // Locks the cursor to the center of the screen
+        Cursor.lockState = CursorLockMode.Locked;
+
+        // Hides the cursor from view
+        Cursor.visible = false;
     }
 
     // Update is called once per frame
