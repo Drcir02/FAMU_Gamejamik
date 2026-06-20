@@ -4,6 +4,9 @@ using UnityEngine.InputSystem;
 public class PlayerFan : MonoBehaviour
 {
     [Header("Fan Settings")]
+    [Tooltip("Which mouse button activates the fan: Left, Right, or Middle.")]
+    [SerializeField] private MouseButton mouseButton = MouseButton.Left;
+
     [Tooltip("Force applied to enemies each frame while the fan is active.")]
     [SerializeField] private float fanForce = 40f;
 
@@ -20,9 +23,29 @@ public class PlayerFan : MonoBehaviour
     [Tooltip("The camera or transform whose forward direction defines where the fan points. If left empty, uses Camera.main.")]
     [SerializeField] private Transform aimTransform;
 
-    [Header("Input")]
-    [Tooltip("Which mouse button activates the fan: Left, Right, or Middle.")]
-    [SerializeField] private MouseButton mouseButton = MouseButton.Left;
+    [Tooltip("Reference to the player's CharacterControllerBase. If empty, finds it in parent.")]
+    [SerializeField] private CharacterControllerBase playerController;
+
+    [Header("Self Push (Recoil)")]
+    [Tooltip("Which mouse button activates the self-push backward jump.")]
+    [SerializeField] private MouseButton recoilMouseButton = MouseButton.Right;
+
+    [Tooltip("Force applied to the player when using the recoil push.")]
+    [SerializeField] private float playerPushForce = 15f;
+
+    [Tooltip("Velocity impulse applied to the player backwards.")]
+    [SerializeField] private float recoilVelocity = 15f;
+
+    [Tooltip("Impulse force applied to enemies in front of the player.")]
+    [SerializeField] private float recoilEnemyForce = 25f;
+
+    [Tooltip("Half-angle of the blast cone for enemies (wider than normal fan).")]
+    [SerializeField] private float recoilConeAngle = 60f;
+
+    [Tooltip("Cooldown for the recoil push in seconds.")]
+    [SerializeField] private float recoilCooldown = 2f;
+
+    private float lastRecoilTime = -9999f;
 
     private enum MouseButton { Left, Right, Middle }
 
@@ -33,13 +56,16 @@ public class PlayerFan : MonoBehaviour
     {
         if (aimTransform == null && Camera.main != null)
             aimTransform = Camera.main.transform;
+
+        if (playerController == null)
+            playerController = GetComponent<CharacterControllerBase>();
     }
 
     private void Update()
     {
         if (aimTransform == null || Mouse.current == null) return;
 
-        bool isPressed = mouseButton switch
+        bool isBlowing = mouseButton switch
         {
             MouseButton.Left   => Mouse.current.leftButton.isPressed,
             MouseButton.Right  => Mouse.current.rightButton.isPressed,
@@ -47,9 +73,64 @@ public class PlayerFan : MonoBehaviour
             _ => false
         };
 
-        if (isPressed)
+        if (isBlowing)
         {
             BlowEnemiesInCone();
+        }
+
+        bool isRecoilPressed = recoilMouseButton switch
+        {
+            MouseButton.Left   => Mouse.current.leftButton.wasPressedThisFrame,
+            MouseButton.Right  => Mouse.current.rightButton.wasPressedThisFrame,
+            MouseButton.Middle => Mouse.current.middleButton.wasPressedThisFrame,
+            _ => false
+        };
+
+        if (isRecoilPressed && Time.time >= lastRecoilTime + recoilCooldown)
+        {
+            ApplyRecoil();
+        }
+    }
+
+    private void ApplyRecoil()
+    {
+        if (playerController == null) return;
+        
+        lastRecoilTime = Time.time;
+        
+        // Push player backward
+        Vector3 pushDir = -aimTransform.forward;
+        Vector3 finalForce = pushDir * playerPushForce * 50f;
+        playerController.AddExternalVelocity(finalForce);
+
+        // Blast enemies forward in a wide cone
+        BlastEnemiesInCone();
+    }
+
+    private void BlastEnemiesInCone()
+    {
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, fanRange, overlapBuffer);
+
+        Vector3 aimFlat = aimTransform.forward;
+        aimFlat.y = 0f;
+        if (aimFlat.sqrMagnitude < 0.001f) return;
+        aimFlat.Normalize();
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            SimpleEnemyChase enemy = overlapBuffer[i].GetComponent<SimpleEnemyChase>();
+            if (enemy == null) continue;
+
+            Vector3 toEnemy = overlapBuffer[i].transform.position - transform.position;
+            toEnemy.y = 0f;
+            if (toEnemy.sqrMagnitude < 0.01f) continue;
+
+            if (Vector3.Angle(aimFlat, toEnemy.normalized) <= recoilConeAngle)
+            {
+                // Similar to normal blowing, but uses impulse and stronger upward bias for a dramatic blast
+                Vector3 blastDir = (toEnemy.normalized + Vector3.up * upwardBias * 1.5f).normalized;
+                enemy.ApplyFanImpulse(blastDir * recoilEnemyForce, true);
+            }
         }
     }
 
@@ -87,14 +168,56 @@ public class PlayerFan : MonoBehaviour
         if (aimTransform != null)
         {
             Vector3 forward = aimTransform.forward;
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawRay(transform.position, forward * fanRange);
+            
+            // --- Normal Fan Cone (Cyan) ---
+            Gizmos.color = new Color(0f, 1f, 1f, 0.8f);
+            DrawWireCone(transform.position, forward, fanConeAngle, fanRange, 24);
+            
+            // --- Recoil Blast Cone (Magenta) ---
+            Gizmos.color = new Color(1f, 0f, 1f, 0.4f);
+            DrawWireCone(transform.position, forward, recoilConeAngle, fanRange, 24);
+        }
+    }
 
-            Vector3 leftEdge = Quaternion.Euler(0, -fanConeAngle, 0) * forward;
-            Vector3 rightEdge = Quaternion.Euler(0, fanConeAngle, 0) * forward;
-            Gizmos.color = new Color(0f, 1f, 1f, 0.5f);
-            Gizmos.DrawRay(transform.position, leftEdge * fanRange);
-            Gizmos.DrawRay(transform.position, rightEdge * fanRange);
+    /// <summary>
+    /// Helper to draw a true 3D wireframe cone using Gizmos.
+    /// </summary>
+    private void DrawWireCone(Vector3 position, Vector3 direction, float angle, float length, int segments)
+    {
+        Vector3 forward = direction.normalized;
+        
+        // Find a perpendicular up vector for the base
+        Vector3 right = Vector3.Cross(forward, Vector3.up);
+        if (right.sqrMagnitude < 0.001f)
+            right = Vector3.Cross(forward, Vector3.right);
+        right.Normalize();
+        Vector3 up = Vector3.Cross(right, forward).normalized;
+
+        Vector3[] edgePoints = new Vector3[segments];
+        for (int i = 0; i < segments; i++)
+        {
+            float rotAngle = i * 360f / segments;
+            Quaternion rot = Quaternion.AngleAxis(rotAngle, forward);
+            
+            // 1. Get a vector that is 'angle' degrees away from 'forward'
+            Vector3 outerDir = Quaternion.AngleAxis(angle, up) * forward;
+            
+            // 2. Rotate it around 'forward' to form the cone
+            Vector3 finalDir = rot * outerDir;
+            
+            edgePoints[i] = position + finalDir * length;
+            
+            // Draw line from tip to edge (only draw some of them to prevent clutter)
+            if (i % 4 == 0)
+            {
+                Gizmos.DrawLine(position, edgePoints[i]);
+            }
+        }
+        
+        // Draw the base polygon (the circle at the end of the cone)
+        for (int i = 0; i < segments; i++)
+        {
+            Gizmos.DrawLine(edgePoints[i], edgePoints[(i + 1) % segments]);
         }
     }
 }

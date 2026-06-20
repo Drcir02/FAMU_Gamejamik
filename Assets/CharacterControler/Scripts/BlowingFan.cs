@@ -121,7 +121,7 @@ public class BlowingFan : MonoBehaviour
                 acceleration = finalForce / rb.mass;
             }
             rb.linearVelocity += acceleration * Time.fixedDeltaTime;
-            rb.AddForce(finalForce * 30f, ForceMode.Force);
+            rb.AddForce(finalForce * 10f, ForceMode.Force);
         }
         else
         {

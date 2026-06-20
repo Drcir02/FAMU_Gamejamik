@@ -1111,29 +1111,17 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6334019241831119698, guid: cec47e6a8cb77a14ba355afcae15a24a, type: 3}
---- !u!1 &61659605 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6384885833336211467, guid: 2be5afad60eb05645bcbe12d136433eb, type: 3}
+--- !u!114 &61659609 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6215225961999279559, guid: 2be5afad60eb05645bcbe12d136433eb, type: 3}
   m_PrefabInstance: {fileID: 1090121426}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &61659613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 61659605}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07eadb2f6efccde4c82bebdbe850dfed, type: 3}
+  m_Script: {fileID: 11500000, guid: 559c7622770b79e4cb65effdfd263ed2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerFan
-  fanForce: 5
-  fanRange: 12
-  fanConeAngle: 30
-  upwardBias: 0.5
-  aimTransform: {fileID: 932900622}
-  mouseButton: 0
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterControllerBase
 --- !u!1 &94718741
 GameObject:
   m_ObjectHideFlags: 0
@@ -2369,10 +2357,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1371398071637873211, guid: 2be5afad60eb05645bcbe12d136433eb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2092365294}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6384885833336211467, guid: 2be5afad60eb05645bcbe12d136433eb, type: 3}
-      insertIndex: 5
-      addedObject: {fileID: 61659613}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2be5afad60eb05645bcbe12d136433eb, type: 3}
 --- !u!64 &1192712356
 MeshCollider:
@@ -2921,8 +2906,9 @@ GameObject:
   - component: {fileID: 2092365294}
   - component: {fileID: 2092365297}
   - component: {fileID: 2092365296}
+  - component: {fileID: 2092365298}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: PlayerFan
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3000,6 +2986,31 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2092365293}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &2092365298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2092365293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07eadb2f6efccde4c82bebdbe850dfed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFan
+  fanForce: 5
+  fanRange: 12
+  fanConeAngle: 16
+  upwardBias: 0.5
+  aimTransform: {fileID: 932900622}
+  mouseButton: 0
+  recoilMouseButton: 1
+  playerPushForce: 20
+  recoilVelocity: 15
+  recoilEnemyForce: 10
+  recoilConeAngle: 36
+  recoilCooldown: 2
+  playerController: {fileID: 61659609}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

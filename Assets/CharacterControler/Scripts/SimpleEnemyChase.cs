@@ -264,6 +264,17 @@ public class SimpleEnemyChase : MonoBehaviour
         rb.AddForce(force, ForceMode.Force);
     }
 
+    /// <summary>
+    /// Called by the fan for a single instantaneous strong wave push.
+    /// </summary>
+    public void ApplyFanImpulse(Vector3 impulse, bool restrictChase)
+    {
+        lastPushedTime = Time.time;
+        if(restrictChase)
+            hasLandedAfterPush = false;
+        rb.AddForce(impulse, ForceMode.Impulse);
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (target == null) return;

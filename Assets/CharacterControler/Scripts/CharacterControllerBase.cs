@@ -266,6 +266,10 @@ public class CharacterControllerBase : MonoBehaviour
 	    moveVector = newMoveVector;
     }
 
+    public void AddExternalVelocity(Vector3 force) {
+	    thisRigidbody.AddForce(force, ForceMode.Force);
+    }
+
     public Vector3 GetMoveVector() {
 	    return moveVector;
     }
