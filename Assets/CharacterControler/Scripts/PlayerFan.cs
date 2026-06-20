@@ -23,6 +23,28 @@ public class PlayerFan : MonoBehaviour
     [Tooltip("The camera or transform whose forward direction defines where the fan points. If left empty, uses Camera.main.")]
     [SerializeField] private Transform aimTransform;
 
+    [Header("Visuals")]
+    [Tooltip("Optional ParticleSystem for the normal fan. Its shape and lifetime will automatically sync with the fan's range and angle.")]
+    [SerializeField] private ParticleSystem normalFanParticles;
+
+    [Tooltip("Optional ParticleSystem for the recoil blast. Its shape and lifetime will automatically sync with the recoil angle and range.")]
+    [SerializeField] private ParticleSystem recoilBlastParticles;
+
+    [Header("Propeller Rotation")]
+    [Tooltip("The actual propeller model to rotate.")]
+    [SerializeField] private Transform propellerTransform;
+
+    [Tooltip("Normal spinning speed in degrees per second when blowing.")]
+    [SerializeField] private float normalSpinSpeed = 1000f;
+
+    [Tooltip("Additional burst of spin speed added instantly when recoil is used.")]
+    [SerializeField] private float recoilSpinBurst = 3000f;
+
+    [Tooltip("How fast the spin smoothly catches up to the target speed. Higher is faster.")]
+    [SerializeField] private float spinAcceleration = 5f;
+
+    private float currentSpinSpeed = 0f;
+
     [Tooltip("Reference to the player's CharacterControllerBase. If empty, finds it in parent.")]
     [SerializeField] private CharacterControllerBase playerController;
 
@@ -46,11 +68,17 @@ public class PlayerFan : MonoBehaviour
     [SerializeField] private float recoilCooldown = 2f;
 
     private float lastRecoilTime = -9999f;
+    private bool wasBlowing = false;
 
     private enum MouseButton { Left, Right, Middle }
 
     // Pre-allocated buffer — no garbage collection
     private readonly Collider[] overlapBuffer = new Collider[32];
+
+    private void OnValidate()
+    {
+        SyncParticleSystems();
+    }
 
     private void Start()
     {
@@ -58,7 +86,37 @@ public class PlayerFan : MonoBehaviour
             aimTransform = Camera.main.transform;
 
         if (playerController == null)
-            playerController = GetComponent<CharacterControllerBase>();
+            playerController = GetComponentInParent<CharacterControllerBase>();
+
+        SyncParticleSystems();
+    }
+
+    private void SyncParticleSystems()
+    {
+        if (normalFanParticles != null)
+        {
+            var shape = normalFanParticles.shape;
+            shape.angle = fanConeAngle * .8f;
+            
+            var main = normalFanParticles.main;
+            // Calculate lifetime based on speed so it travels exactly 'fanRange'
+            if (main.startSpeed.mode == ParticleSystemCurveMode.Constant && main.startSpeed.constant > 0.01f)
+            {
+                main.startLifetime = fanRange / main.startSpeed.constant;
+            }
+        }
+
+        if (recoilBlastParticles != null)
+        {
+            var shape = recoilBlastParticles.shape;
+            shape.angle = recoilConeAngle * .8f;
+            
+            var main = recoilBlastParticles.main;
+            if (main.startSpeed.mode == ParticleSystemCurveMode.Constant && main.startSpeed.constant > 0.01f)
+            {
+                main.startLifetime = fanRange / main.startSpeed.constant;
+            }
+        }
     }
 
     private void Update()
@@ -76,6 +134,32 @@ public class PlayerFan : MonoBehaviour
         if (isBlowing)
         {
             BlowEnemiesInCone();
+            
+            if (!wasBlowing)
+            {
+                if (normalFanParticles != null) normalFanParticles.Play();
+            }
+        }
+        else
+        {
+            if (wasBlowing)
+            {
+                if (normalFanParticles != null) normalFanParticles.Stop();
+            }
+        }
+
+        wasBlowing = isBlowing;
+
+        // --- Propeller Rotation Logic ---
+        if (propellerTransform != null)
+        {
+            float targetSpinSpeed = isBlowing ? normalSpinSpeed : 0f;
+            
+            // Smoothly move the current spin speed towards the target speed
+            currentSpinSpeed = Mathf.Lerp(currentSpinSpeed, targetSpinSpeed, Time.deltaTime * spinAcceleration);
+            
+            // Apply rotation around local X axis
+            propellerTransform.Rotate(Vector3.forward * currentSpinSpeed * Time.deltaTime, Space.Self);
         }
 
         bool isRecoilPressed = recoilMouseButton switch
@@ -102,6 +186,15 @@ public class PlayerFan : MonoBehaviour
         Vector3 pushDir = -aimTransform.forward;
         Vector3 finalForce = pushDir * playerPushForce * 50f;
         playerController.AddExternalVelocity(finalForce);
+
+        // Play the blast particle effect
+        if (recoilBlastParticles != null)
+        {
+            recoilBlastParticles.Play();
+        }
+
+        // Add a huge burst of spin speed
+        currentSpinSpeed += recoilSpinBurst;
 
         // Blast enemies forward in a wide cone
         BlastEnemiesInCone();
