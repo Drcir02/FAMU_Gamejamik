@@ -238,6 +238,21 @@ public class PlayerFan : MonoBehaviour
 
         for (int i = 0; i < hitCount; i++)
         {
+            // Check for PC Temperature to cool it down
+            PCTemperature pc = overlapBuffer[i].GetComponent<PCTemperature>();
+            if (pc != null)
+            {
+                Vector3 toPC = overlapBuffer[i].transform.position - transform.position;
+                toPC.y = 0f;
+                if (toPC.sqrMagnitude >= 0.01f && Vector3.Angle(aimFlat, toPC.normalized) <= fanConeAngle)
+                {
+                    // Calculate intensity based on true 3D distance
+                    float distance = Vector3.Distance(transform.position, overlapBuffer[i].transform.position);
+                    float intensity = 1f - Mathf.Clamp01(distance / fanRange);
+                    pc.ApplyFanCooling(intensity);
+                }
+            }
+
             SimpleEnemyChase enemy = overlapBuffer[i].GetComponent<SimpleEnemyChase>();
             if (enemy == null) continue;
 

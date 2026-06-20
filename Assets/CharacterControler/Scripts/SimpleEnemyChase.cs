@@ -40,6 +40,10 @@ public class SimpleEnemyChase : MonoBehaviour
     [Tooltip("How long the enemy must wait between jumps (in seconds).")]
     [SerializeField] private float jumpCooldown = 2.0f;
 
+    [Header("Animation")]
+    [Tooltip("Animator on the child model. Auto-assigned if left empty.")]
+    [SerializeField] private Animator animator;
+
     private float cooldownTimer = 0f;
 
     private Rigidbody rb;
@@ -50,6 +54,7 @@ public class SimpleEnemyChase : MonoBehaviour
     private float stuckTimer = 0f;
     private Vector3 stuckEscapeDir = Vector3.zero;
     private float stuckEscapeTimer = 0f;
+    private float lastBlownTriggerTime = -10f;
 
     public Transform Target
     {
@@ -80,6 +85,11 @@ public class SimpleEnemyChase : MonoBehaviour
         rb.isKinematic = false;
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
     }
 
     private void Start()
@@ -122,9 +132,19 @@ public class SimpleEnemyChase : MonoBehaviour
         // 1. Calculate the current horizontal speed (ignoring vertical falling/jumping velocity)
         Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
         float currentSpeed = horizontalVelocity.magnitude;
+        
+        bool isGroundedNow = IsGrounded();
+
+        if (animator != null)
+        {
+            // Normalize speed for the Blend Tree (0 to 1)
+            float normalizedSpeed = Mathf.Clamp01(currentSpeed / speed);
+            animator.SetFloat("Blend", normalizedSpeed);
+            animator.SetBool("Grounded", isGroundedNow);
+        }
 
         // 2. Check if the enemy is moving too slow, and ensure it's grounded so it doesn't double-jump
-        if (currentSpeed < speedThreshold && IsGrounded() && cooldownTimer <= 0)
+        if (currentSpeed < speedThreshold && isGroundedNow && cooldownTimer <= 0)
         {
             Jump();
         }
@@ -260,7 +280,14 @@ public class SimpleEnemyChase : MonoBehaviour
     {
         lastPushedTime = Time.time;
         if(restrictChase)
+        {
+            if (hasLandedAfterPush && Time.time > lastBlownTriggerTime + 0.5f)
+            {
+                if (animator != null) animator.SetTrigger("Blown");
+                lastBlownTriggerTime = Time.time;
+            }
             hasLandedAfterPush = false;
+        }
         rb.AddForce(force, ForceMode.Force);
     }
 
@@ -271,7 +298,14 @@ public class SimpleEnemyChase : MonoBehaviour
     {
         lastPushedTime = Time.time;
         if(restrictChase)
+        {
+            if (hasLandedAfterPush && Time.time > lastBlownTriggerTime + 0.5f)
+            {
+                if (animator != null) animator.SetTrigger("Blown");
+                lastBlownTriggerTime = Time.time;
+            }
             hasLandedAfterPush = false;
+        }
         rb.AddForce(impulse, ForceMode.Impulse);
     }
 

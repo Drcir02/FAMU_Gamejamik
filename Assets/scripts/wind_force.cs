@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class wind_force : MonoBehaviour
 {
-    [Header("Nastavení vìtru")]
-    [Tooltip("Maximální síla vìtru tìsnì u vìtráku.")]
+    [Header("Nastaveni vetru")]
+    [Tooltip("Maximalni sila vetru tesne u vetraku.")]
     public float maxWindForce = 25f;
 
-    [Tooltip("Smìr, kterým vítr fouká (ve world space nebo local space).")]
+    [Tooltip("Smer, kterym vitr fouka (ve world space nebo local space).")]
     public Vector3 windDirection = Vector3.up;
 
     private Collider fanCollider;
@@ -18,33 +18,47 @@ public class wind_force : MonoBehaviour
 
     void OnTriggerStay(Collider other)
     {
-        // Zkontrolujeme, zda má objekt, který vstoupil do vìtru, Rigidbody
+        // Zkontrolujeme, zda ma objekt, ktery vstoupil do vetru, Rigidbody
         Rigidbody rb = other.GetComponent<Rigidbody>();
 
         if (rb != null)
         {
-            // Vypoèítáme lineární pokles síly podle vzdálenosti
+            // Vypocteme linearni pokles sily podle vzdalenosti
             float forceMagnitude = CalculateWindForce(other.transform.position);
 
-            // Aplikujeme sílu smìrem nahoru (nebo ve zvoleném smìru)
-            // Používáme ForceMode.Force, což bere v potaz hmotnost (mass) objektu
+            // Aplikujeme silu smerem nahoru (nebo ve zvolenem smeru)
+            // Pouzivame ForceMode.Force, coz bere v potaz hmotnost (mass) objektu
             rb.AddForce(windDirection.normalized * forceMagnitude, ForceMode.Force);
+        }
+
+        // Zkontrolujeme, zda vitr fouka na PC a ochlazujeme ho
+        PCTemperature pc = other.GetComponent<PCTemperature>();
+        if (pc != null)
+        {
+            float distance = Vector3.Distance(transform.position, other.transform.position);
+            float maxDistance = fanCollider.bounds.extents.y * 2f; 
+            
+            // 0 = nejvzdalenejsi, 1 = nejblize
+            float normalizedDistance = Mathf.Clamp01(distance / maxDistance);
+            float intensity = 1f - normalizedDistance;
+            
+            pc.ApplyFanCooling(intensity);
         }
     }
 
     float CalculateWindForce(Vector3 objectPosition)
     {
-        // Vzdálenost mezi støedem základny vìtráku (tímto objektem) a objektem ve vzduchu
+        // Vzdalenost mezi stredem zakladny vetraku (timto objektem) a objektem ve vzduchu
         float distance = Vector3.Distance(transform.position, objectPosition);
 
-        // Zjistíme maximální dosah collideru (pøedpokládáme BoxCollider na výšku po ose Y)
+        // Zjistime maximalni dosah collideru (predpokladame BoxCollider na vysku po ose Y)
         float maxDistance = fanCollider.bounds.extents.y * 2f;
 
-        // Normovaná vzdálenost (0 = u vìtráku, 1 = na konci dosahu)
+        // Normovana vzdalenost (0 = u vetraku, 1 = na konci dosahu)
         float normalizedDistance = Mathf.Clamp01(distance / maxDistance);
 
-        // Síla klesá s lineárním úbytkem (èím dál, tím slabší)
-        // Pro realistiètìjší efekt mùžeš použít: Mathf.Pow(1 - normalizedDistance, 2)
+        // Sila klesa s linearnim ubytkem (cim dal, tim slabsi)
+        // Pro realistictejsi efekt muzes pouzit: Mathf.Pow(1 - normalizedDistance, 2)
         float currentForce = Mathf.Lerp(maxWindForce, 0f, normalizedDistance);
 
         return currentForce;
