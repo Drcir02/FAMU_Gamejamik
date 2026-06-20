@@ -45,6 +45,7 @@ public class SimpleEnemyChase : MonoBehaviour
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private float lastPushedTime = -10f;
+    private bool hasLandedAfterPush = true;
     private Vector3 lastRecordedPos;
     private float stuckTimer = 0f;
     private Vector3 stuckEscapeDir = Vector3.zero;
@@ -91,9 +92,14 @@ public class SimpleEnemyChase : MonoBehaviour
         if (target == null) return;
 
         bool grounded = IsGrounded();
+        if (grounded)
+        {
+            hasLandedAfterPush = true;
+        }
+
         bool recentlyPushed = (Time.time - lastPushedTime) < recoveryDelay;
 
-        if (grounded && !recentlyPushed)
+        if (!recentlyPushed && hasLandedAfterPush)
         {
             ChaseTarget();
             DetectStuck();
@@ -128,6 +134,7 @@ public class SimpleEnemyChase : MonoBehaviour
     {
         // Apply an upward force (ForceMode.Impulse is ideal for instant actions like jumping)
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        //rb.AddForce(Vector3.forward * (jumpForce/2), ForceMode.Impulse); // Optional: add a small forward push
 
         // Set the cooldown timer immediately
         cooldownTimer = jumpCooldown;
@@ -252,6 +259,7 @@ public class SimpleEnemyChase : MonoBehaviour
     public void ApplyFanForce(Vector3 force)
     {
         lastPushedTime = Time.time;
+        hasLandedAfterPush = false;
         rb.AddForce(force, ForceMode.Force);
     }
 
