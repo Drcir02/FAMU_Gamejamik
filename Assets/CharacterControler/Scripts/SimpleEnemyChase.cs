@@ -44,6 +44,10 @@ public class SimpleEnemyChase : MonoBehaviour
     [Tooltip("Animator on the child model. Auto-assigned if left empty.")]
     [SerializeField] private Animator animator;
 
+    [Header("Audio")]
+    [Tooltip("Scream sound when pushed by fan.")]
+    [SerializeField] private AudioSource screamSound;
+
     private float cooldownTimer = 0f;
 
     private Rigidbody rb;
@@ -319,7 +323,8 @@ public class SimpleEnemyChase : MonoBehaviour
     public void ApplyFanImpulse(Vector3 impulse, bool restrictChase)
     {
         lastPushedTime = Time.time;
-        if(restrictChase)
+        screamSound.Play();
+        if (restrictChase)
         {
             if (hasLandedAfterPush && Time.time > lastBlownTriggerTime + 0.5f)
             {

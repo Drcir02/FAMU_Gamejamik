@@ -43,6 +43,21 @@ public class PlayerFan : MonoBehaviour
     [Tooltip("How fast the spin smoothly catches up to the target speed. Higher is faster.")]
     [SerializeField] private float spinAcceleration = 5f;
 
+    [Header("Audio")]
+    [Tooltip("Sound played when the fan starts blowing.")]
+    [SerializeField] private AudioSource startSound;
+
+    [Tooltip("Looping sound played while the fan is blowing.")]
+    [SerializeField] private AudioSource loopSound;
+
+    [Tooltip("Sound played when the recoil blast is used.")]
+    [SerializeField] private AudioSource recoilSound;
+
+    [Tooltip("How fast the loop sound fades in and out.")]
+    [SerializeField] private float audioFadeSpeed = 15f;
+
+    private float targetLoopVolume = 0f;
+
     private float currentSpinSpeed = 0f;
 
     [Tooltip("Reference to the player's CharacterControllerBase. If empty, finds it in parent.")]
@@ -87,6 +102,11 @@ public class PlayerFan : MonoBehaviour
 
         if (playerController == null)
             playerController = GetComponentInParent<CharacterControllerBase>();
+
+        if (loopSound != null)
+        {
+            loopSound.volume = 0f;
+        }
 
         SyncParticleSystems();
     }
@@ -138,13 +158,36 @@ public class PlayerFan : MonoBehaviour
             if (!wasBlowing)
             {
                 if (normalFanParticles != null) normalFanParticles.Play();
+
+                // Only play start sound if the loop sound is fully stopped/faded out
+                if (loopSound == null || !loopSound.isPlaying || loopSound.volume <= 0.01f)
+                {
+                    if (startSound != null) startSound.Play();
+                }
+
+                if (loopSound != null && !loopSound.isPlaying)
+                {
+                    loopSound.Play();
+                }
             }
+            targetLoopVolume = 1f;
         }
         else
         {
             if (wasBlowing)
             {
                 if (normalFanParticles != null) normalFanParticles.Stop();
+            }
+            targetLoopVolume = 0f;
+        }
+
+        if (loopSound != null)
+        {
+            loopSound.volume = Mathf.Lerp(loopSound.volume, targetLoopVolume, Time.deltaTime * audioFadeSpeed);
+            if (!isBlowing && loopSound.volume <= 0.01f && loopSound.isPlaying)
+            {
+                loopSound.Stop();
+                loopSound.volume = 0f;
             }
         }
 
@@ -191,6 +234,11 @@ public class PlayerFan : MonoBehaviour
         if (recoilBlastParticles != null)
         {
             recoilBlastParticles.Play();
+        }
+
+        if (recoilSound != null)
+        {
+            recoilSound.Play();
         }
 
         // Add a huge burst of spin speed
