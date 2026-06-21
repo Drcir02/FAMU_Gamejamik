@@ -33,6 +33,9 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Number of enemies to spawn in each wave.")]
     [SerializeField] private int enemiesPerWave = 5;
 
+    [Tooltip("Multiplier to increase the number of enemies in each subsequent wave.")]
+    [SerializeField] private float enemiesPerWaveMultiplier = 2f;
+
     [Tooltip("Delay in seconds between waves.")]
     [SerializeField] private float timeBetweenWaves = 10f;
 
@@ -72,7 +75,7 @@ public class EnemySpawner : MonoBehaviour
     {
         int spawnedCount = 0;
 
-        while (spawnedCount < enemiesPerWave)
+        while (spawnedCount < enemiesPerWave + (currentWaveIndex * enemiesPerWaveMultiplier))
         {
             if (TryGetRandomSpawnPosition(out Vector3 spawnPosition))
             {
@@ -113,7 +116,8 @@ public class EnemySpawner : MonoBehaviour
 
         if (enemyInstance.TryGetComponent<SimpleEnemyChase>(out var chaseScript))
         {
-            chaseScript.Target = chaseTarget;
+            if(chaseTarget != null)
+                chaseScript.Target = chaseTarget;
         }
     }
 

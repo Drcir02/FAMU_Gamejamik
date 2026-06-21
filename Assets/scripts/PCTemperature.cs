@@ -83,6 +83,22 @@ public class PCTemperature : MonoBehaviour
         }
     }
 
+    public void AddNearbyEnemy(Collider enemy)
+    {
+        if (enemy.CompareTag(enemyTag))
+        {
+            nearbyEnemies.Add(enemy);
+        }
+    }
+
+    public void RemoveNearbyEnemy(Collider enemy)
+    {
+        if (enemy.CompareTag(enemyTag))
+        {
+            nearbyEnemies.Remove(enemy);
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         // Add enemy to the set when they enter the trigger

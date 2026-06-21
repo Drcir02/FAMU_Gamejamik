@@ -129,6 +129,8 @@ public class SimpleEnemyChase : MonoBehaviour
             cooldownTimer -= Time.deltaTime;
         }
 
+        SetClosestTarget();
+
         // 1. Calculate the current horizontal speed (ignoring vertical falling/jumping velocity)
         Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
         float currentSpeed = horizontalVelocity.magnitude;
@@ -148,6 +150,26 @@ public class SimpleEnemyChase : MonoBehaviour
         {
             Jump();
         }
+    }
+
+    public void SetClosestTarget()
+    {
+        GameObject[] components = GameObject.FindGameObjectsWithTag("Component");
+        if (components.Length == 0) return;
+        Transform closest = null;
+        float closestDistSqr = Mathf.Infinity;
+        Vector3 currentPos = transform.position;
+        foreach (GameObject player in components)
+        {
+            Vector3 directionToPlayer = player.transform.position - currentPos;
+            float dSqrToPlayer = directionToPlayer.sqrMagnitude;
+            if (dSqrToPlayer < closestDistSqr)
+            {
+                closestDistSqr = dSqrToPlayer;
+                closest = player.transform;
+            }
+        }
+        target = closest;
     }
 
     void Jump()

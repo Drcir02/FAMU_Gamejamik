@@ -23,6 +23,7 @@ public class FPSLimiter : MonoBehaviour
     private RenderTexture frozenRT;
     private GameObject canvasObj;
     private RawImage displayImage;
+    private GameObject dummyCamObj;
 
     private float timer = 0f;
     private int currentTargetFPS = 120;
@@ -61,6 +62,17 @@ public class FPSLimiter : MonoBehaviour
         
         // Tell the camera to render to our texture instead of directly to the screen
         mainCamera.targetTexture = activeRT;
+
+        // Create a dummy camera to render to the screen so Unity doesn't complain about "No cameras rendering"
+        if (dummyCamObj == null)
+        {
+            dummyCamObj = new GameObject("StutterDummyCamera");
+            Camera dummyCam = dummyCamObj.AddComponent<Camera>();
+            dummyCam.cullingMask = 0;
+            dummyCam.clearFlags = CameraClearFlags.SolidColor;
+            dummyCam.backgroundColor = Color.black;
+            dummyCam.targetDisplay = 0; // Display 1
+        }
     }
 
     private void CreateStutterCanvas()
@@ -148,5 +160,6 @@ public class FPSLimiter : MonoBehaviour
         if (activeRT != null) activeRT.Release();
         if (frozenRT != null) frozenRT.Release();
         if (canvasObj != null) Destroy(canvasObj);
+        if (dummyCamObj != null) Destroy(dummyCamObj);
     }
 }
