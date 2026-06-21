@@ -130,6 +130,18 @@ public class FPSLimiter : MonoBehaviour
 
         if(currentTargetFPS <= 1f)
         {
+            // Save the session time
+            float sessionTime = Time.timeSinceLevelLoad;
+            PlayerPrefs.SetFloat("LastSessionTime", sessionTime);
+            
+            // Check and update high score
+            float highScore = PlayerPrefs.GetFloat("HighScoreTime", 0f);
+            if (sessionTime > highScore)
+            {
+                PlayerPrefs.SetFloat("HighScoreTime", sessionTime);
+            }
+            PlayerPrefs.Save();
+
             // This closes the game if it's a standalone build (or freezes WebGL)
             Application.Quit();
         }
